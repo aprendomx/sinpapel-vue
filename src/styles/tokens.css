@@ -1,0 +1,16 @@
+:root {
+  --sp-color-primary: #3a4a5c;
+  --sp-color-on-primary: #ffffff;
+  --sp-surface: #ffffff;
+  --sp-surface-alt: #f6f7f9;
+  --sp-border: #dfe3e8;
+  --sp-text: #1f2630;
+  --sp-text-muted: #6b7682;
+  --sp-radius: 8px;
+  --sp-badge-bg: #eef1f4;
+  --sp-badge-text: #3a4a5c;
+  --sp-ok: #1e5b4f;
+  --sp-warn: #b06a10;
+  --sp-danger: #b00425;
+  --sp-font: 'Inter', system-ui, sans-serif;
+}
