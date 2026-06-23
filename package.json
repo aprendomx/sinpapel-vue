@@ -20,7 +20,9 @@
     "build": "vite build",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "eslint \"{src,demo,tests}/**/*.{js,vue}\""
+    "lint": "eslint \"{src,demo,tests}/**/*.{js,vue}\"",
+    "gate:tests": "rai-frontend gate check tests --verbose",
+    "gate:baseline": "rai-frontend baseline snapshot"
   },
   "peerDependencies": {
     "pinia": "^3.0.0",
