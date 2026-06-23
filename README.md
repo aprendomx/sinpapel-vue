@@ -53,6 +53,14 @@ Override the `--sp-*` CSS variables (see `src/styles/tokens.css`) in your own sc
 ```bash
 npm install
 npm run dev      # demo app
-npm test         # vitest (the enforced gate)
+npm test         # vitest (run directly)
 npm run build    # library build → dist/
+```
+
+**Quality gate (optional) — requires the `rai-frontend` CLI (Python, via pip, not npm):**
+
+```bash
+pip install "rai-frontend-gates @ git+ssh://git@github.com/aprendomx/rai-frontend-gates.git@v0.1.1"
+npm run gate:baseline   # snapshot the current test baseline
+npm run gate:tests      # the enforced gate (wraps vitest with delta-vs-baseline)
 ```
