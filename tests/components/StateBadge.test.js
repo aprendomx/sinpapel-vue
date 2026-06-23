@@ -13,6 +13,6 @@ describe('StateBadge', () => {
   })
   it('applies the api color when provided', () => {
     const w = mount(StateBadge, { props: { estado: 'X', color: '#0a8f00' } })
-    expect(w.attributes('style')).toContain('#0a8f00')
+    expect(w.element.style.color).toBe('rgb(10, 143, 0)')
   })
 })
