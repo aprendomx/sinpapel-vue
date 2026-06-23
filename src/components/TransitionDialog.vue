@@ -114,9 +114,13 @@ const errorText = computed(() => {
 
 async function onSubmit() {
   if (!tx.targetState.value) return
-  const result = await tx.submit()
-  emit('transitioned', result)
-  visible.value = false
+  try {
+    const result = await tx.submit()
+    emit('transitioned', result)
+    visible.value = false
+  } catch {
+    // error already captured in tx.error and shown via errorText; keep dialog open
+  }
 }
 
 defineExpose({ tx, onSubmit })

@@ -5,6 +5,11 @@ export default defineConfig({
   plugins: [vue()],
   test: {
     environment: 'jsdom',
+    environmentOptions: {
+      jsdom: {
+        resources: 'usable',
+      },
+    },
     globals: true,
     setupFiles: ['./tests/setup.js'],
   },

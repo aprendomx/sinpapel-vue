@@ -36,6 +36,8 @@ const http = axios.create({ withCredentials: true }) // you own auth/baseURL
 
 `resource` is the `effective_slug` of your `@workflow_enabled` model (no auto-discovery in v1).
 
+> **Note:** `SeguimientoPanel` creates its store once from the initial props; if you bind a reactive `pk` or `resource`, pass a matching `:key` (e.g. `:key="pk"`) to force a remount when it changes.
+
 ## Components
 
 `SeguimientoPanel` (composed), `StateBadge`, `HistoryTimeline`, `TransitionDialog`, `PreviewTransitionPanel`, `MetadatosForm`, `SlaStatusPanel`. Plus `createSinpapelClient`, `useTransition`, `useSeguimientoStore`.
