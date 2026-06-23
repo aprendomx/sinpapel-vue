@@ -18,7 +18,6 @@ const displayLabel = computed(() => props.label || (props.estado || 'N/A').repla
 const badgeStyle = computed(() => {
   if (!props.color) return {}
   return {
-    '--sp-badge-color': props.color,
     backgroundColor: `color-mix(in srgb, ${props.color} 16%, white)`,
     color: props.color,
   }
