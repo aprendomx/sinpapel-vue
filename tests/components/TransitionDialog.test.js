@@ -25,4 +25,24 @@ describe('TransitionDialog', () => {
     await w.vm.onSubmit()
     expect(client.transition).not.toHaveBeenCalled()
   })
+
+  it('has a11y attributes on the dialog wrapper', () => {
+    const client = { transition: vi.fn() }
+    const w = mount(TransitionDialog, {
+      props: { modelValue: true, client, currentState: 'X', estados },
+    })
+    const card = w.find('.sp-dialog')
+    expect(card.attributes('role')).toBe('dialog')
+    expect(card.attributes('aria-modal')).toBe('true')
+    expect(card.attributes('aria-labelledby')).toBe('sp-dialog-title')
+  })
+
+  it('errors container has aria-live polite', () => {
+    const client = { transition: vi.fn() }
+    const w = mount(TransitionDialog, {
+      props: { modelValue: true, client, currentState: 'X', estados },
+    })
+    const errorContainer = w.find('.sp-dialog__errors')
+    expect(errorContainer.attributes('aria-live')).toBe('polite')
+  })
 })

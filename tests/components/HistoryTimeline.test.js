@@ -20,4 +20,24 @@ describe('HistoryTimeline', () => {
     const w = mount(HistoryTimeline, { props: { entries: [] } })
     expect(w.find('.sp-tl-empty').exists()).toBe(true)
   })
+
+  it('shows pagination controls when count exceeds page', () => {
+    const w = mount(HistoryTimeline, {
+      props: { entries: entries.slice(0, 1), page: 1, pageSize: 1, count: 2 },
+    })
+    expect(w.find('.sp-tl-pager').exists()).toBe(true)
+    expect(w.text()).toContain('Página 1 de 2')
+    expect(w.find('button.sp-tl-pager__prev').attributes('disabled')).toBeDefined()
+    expect(w.find('button.sp-tl-pager__next').attributes('disabled')).toBeUndefined()
+  })
+
+  it('emits prev and next on button click', async () => {
+    const w = mount(HistoryTimeline, {
+      props: { entries, page: 2, pageSize: 2, count: 5 },
+    })
+    await w.find('button.sp-tl-pager__prev').trigger('click')
+    await w.find('button.sp-tl-pager__next').trigger('click')
+    expect(w.emitted('prev')).toHaveLength(1)
+    expect(w.emitted('next')).toHaveLength(1)
+  })
 })

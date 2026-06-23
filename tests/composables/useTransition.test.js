@@ -49,4 +49,54 @@ describe('useTransition', () => {
     expect(t.error.value).toEqual({ detail: 'nope' })
     expect(t.loading.value).toBe(false)
   })
+
+  it('resets all fields after successful submit', async () => {
+    const client = { transition: vi.fn().mockResolvedValue({ success: true }) }
+    const t = useTransition(client)
+    t.targetState.value = 'APROBADA'
+    t.comentarios.value = 'ok'
+    t.montoAprobado.value = 1000
+    t.condiciones.value = 'cond'
+    t.signatureBackend.value = 'fake'
+    await t.submit()
+    expect(t.targetState.value).toBeNull()
+    expect(t.comentarios.value).toBe('')
+    expect(t.montoAprobado.value).toBeNull()
+    expect(t.condiciones.value).toBe('')
+    expect(t.signatureBackend.value).toBeNull()
+    expect(t.signatureFields.firma_b64).toBe('')
+  })
+
+  it('validate requires targetState', () => {
+    const t = useTransition({ transition: vi.fn() })
+    expect(t.validate()).toBe(false)
+    expect(t.errors.targetState).toBeTruthy()
+  })
+
+  it('validate requires fiel server-side fields', () => {
+    const t = useTransition({ transition: vi.fn() })
+    t.targetState.value = 'X'
+    t.signatureBackend.value = 'fiel'
+    t.signatureMode.value = 'server-side'
+    expect(t.validate()).toBe(false)
+    expect(t.errors.cer_file).toBeTruthy()
+    expect(t.errors.key_file).toBeTruthy()
+    expect(t.errors.password).toBeTruthy()
+  })
+
+  it('validate rejects non-positive montoAprobado', () => {
+    const t = useTransition({ transition: vi.fn() })
+    t.targetState.value = 'X'
+    t.montoAprobado.value = 0
+    expect(t.validate()).toBe(false)
+    expect(t.errors.montoAprobado).toBeTruthy()
+  })
+
+  it('validate passes when all required fields are valid', () => {
+    const t = useTransition({ transition: vi.fn() })
+    t.targetState.value = 'X'
+    t.montoAprobado.value = 100
+    expect(t.validate()).toBe(true)
+    expect(Object.keys(t.errors).length).toBe(0)
+  })
 })

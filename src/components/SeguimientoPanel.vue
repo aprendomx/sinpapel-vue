@@ -1,9 +1,9 @@
 <template>
   <div class="sp-panel">
     <header class="sp-panel__head">
-      <state-badge :estado="currentState" />
+      <state-badge :estado="currentState" :color="currentStateColor" />
       <button class="sp-btn sp-btn--primary" :disabled="!store.estados.length" @click="dialog = true">
-        Cambiar estado
+        {{ labels.cambiarEstado }}
       </button>
     </header>
 
@@ -14,10 +14,18 @@
     </nav>
 
     <section class="sp-panel__body">
-      <history-timeline v-show="tab === 'historial'" :entries="store.historial" />
+      <history-timeline
+        v-show="tab === 'historial'"
+        :entries="store.historial"
+        :page="historialPage"
+        :page-size="20"
+        :count="store.historialCount"
+        @prev="onPrevPage"
+        @next="onNextPage"
+      />
       <preview-transition-panel v-if="tab === 'preview'" :client="store.client" :target-state="previewTarget" />
       <div v-if="tab === 'preview'" class="sp-panel__preview-pick">
-        <label class="sp-label">Estado destino</label>
+        <label class="sp-label">{{ labels.estadoDestino }}</label>
         <select v-model="previewTarget" class="sp-input">
           <option value="">—</option>
           <option v-for="e in store.estados" :key="e.id ?? e.nombre" :value="e.nombre">{{ e.nombre }}</option>
@@ -38,8 +46,10 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onUnmounted, provide } from 'vue'
 import { useSeguimientoStore } from '../stores/useSeguimientoStore.js'
+import es from '../locales/es.js'
+import en from '../locales/en.js'
 import StateBadge from './StateBadge.vue'
 import HistoryTimeline from './HistoryTimeline.vue'
 import TransitionDialog from './TransitionDialog.vue'
@@ -54,32 +64,63 @@ const props = defineProps({
   pk: { type: [Number, String], required: true },
   currentState: { type: String, default: '' },
   canEvaluateSla: { type: Boolean, default: false },
+  locale: { type: String, default: 'es' },
 })
+
+provide('spLocale', computed(() => props.locale))
 
 const store = useSeguimientoStore({
   axios: props.axios, basePath: props.basePath, resource: props.resource, pk: props.pk,
 })
 
+onUnmounted(() => store.cancel())
+
 const dialog = ref(false)
 const tab = ref('historial')
 const previewTarget = ref('')
+const historialPage = ref(1)
+
+const currentStateColor = computed(() => {
+  const found = store.estados.find((e) => e.nombre === props.currentState)
+  return found?.color || ''
+})
+
+const LOCALES = { es, en }
+const labels = new Proxy({}, {
+  get(target, key) {
+    return (LOCALES[props.locale] || LOCALES.es)[key]
+  },
+})
 
 const visibleTabs = computed(() => {
   const tabs = [
-    { key: 'historial', label: 'Historial' },
-    { key: 'preview', label: 'Previsualizar' },
-    { key: 'metadatos', label: 'Metadatos' },
+    { key: 'historial', label: labels.historial },
+    { key: 'preview', label: labels.previsualizar },
+    { key: 'metadatos', label: labels.metadatos },
   ]
-  if (props.canEvaluateSla) tabs.push({ key: 'sla', label: 'SLA' })
+  if (props.canEvaluateSla) tabs.push({ key: 'sla', label: labels.sla })
   return tabs
 })
 
-async function load() {
+async function load(page = historialPage.value) {
   await store.cargarEstados()
-  await store.cargarHistorial()
+  await store.cargarHistorial(page)
 }
 
 async function onTransitioned() {
+  historialPage.value = 1
+  await load()
+}
+
+async function onPrevPage() {
+  if (historialPage.value > 1) {
+    historialPage.value -= 1
+    await load()
+  }
+}
+
+async function onNextPage() {
+  historialPage.value += 1
   await load()
 }
 
@@ -96,9 +137,4 @@ load()
 .sp-tab.is-active { color: var(--sp-color-primary); border-bottom-color: var(--sp-color-primary); }
 .sp-panel__body { padding: 16px; }
 .sp-panel__preview-pick { display: flex; flex-direction: column; gap: 4px; margin-top: 12px; max-width: 280px; }
-.sp-label { font-size: 12px; font-weight: 600; color: var(--sp-text); }
-.sp-input { padding: 7px 10px; border: 1px solid var(--sp-border); border-radius: 6px; font: inherit; }
-.sp-btn { padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer; font: inherit; font-weight: 600; }
-.sp-btn--primary { background: var(--sp-color-primary); color: var(--sp-color-on-primary); }
-.sp-btn--primary:disabled { opacity: 0.6; cursor: not-allowed; }
 </style>

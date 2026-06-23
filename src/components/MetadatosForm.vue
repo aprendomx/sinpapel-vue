@@ -15,7 +15,7 @@
 
     <div class="sp-actions">
       <button type="submit" class="sp-btn sp-btn--primary" :disabled="loading">
-        {{ loading ? 'Guardando…' : 'Guardar' }}
+        {{ loading ? labels.guardando : labels.guardar }}
       </button>
     </div>
   </form>
@@ -23,9 +23,12 @@
 
 <script setup>
 import { ref, reactive } from 'vue'
+import { useSpLabels } from '../composables/useSpLabels.js'
 
 const props = defineProps({ client: { type: Object, required: true } })
 const emit = defineEmits(['saved'])
+
+const labels = useSpLabels()
 
 const schema = ref([])
 const values = reactive({})
@@ -64,12 +67,7 @@ load()
 <style scoped>
 .sp-meta { display: flex; flex-direction: column; gap: 12px; font-family: var(--sp-font); }
 .sp-meta-field { display: flex; flex-direction: column; gap: 4px; }
-.sp-label { font-size: 12px; font-weight: 600; color: var(--sp-text); }
-.sp-input { padding: 7px 10px; border: 1px solid var(--sp-border); border-radius: 6px; font: inherit; color: var(--sp-text); background: var(--sp-surface); }
 .sp-help { font-size: 11px; color: var(--sp-text-muted); }
-.sp-error { font-size: 11px; color: var(--sp-danger); }
-.sp-actions { display: flex; justify-content: flex-end; }
-.sp-btn { padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer; font: inherit; font-weight: 600; }
-.sp-btn--primary { background: var(--sp-color-primary); color: var(--sp-color-on-primary); }
-.sp-btn--primary:disabled { opacity: 0.6; cursor: not-allowed; }
+.sp-error { font-size: 11px; }
+.sp-actions { justify-content: flex-end; }
 </style>

@@ -1,6 +1,10 @@
-import { ref } from 'vue'
+import { ref, reactive } from 'vue'
 import { defineStore } from 'pinia'
 import { createSinpapelClient } from '../client/sinpapelClient.js'
+
+function isCancelError(e) {
+  return e.name === 'AbortError' || e.name === 'CanceledError' || e.code === 'ERR_CANCELED'
+}
 
 /**
  * Setup-store factory keyed by (resource, pk). The client lives as a closure
@@ -16,60 +20,129 @@ export function useSeguimientoStore(options) {
     const metadatos = ref({ schema: [], values: {} })
     const preview = ref(null)
     const slaActions = ref([])
-    const loading = ref(false)
+    const loading = reactive({ estados: false, historial: false, metadatos: false, transicion: false })
     const error = ref(null)
 
-    async function run(fn) {
-      loading.value = true
+    const inFlight = new Set()
+
+    function cancel() {
+      for (const ctrl of inFlight) {
+        ctrl.abort()
+      }
+      inFlight.clear()
+    }
+
+    function makeClient() {
+      const ctrl = new AbortController()
+      inFlight.add(ctrl)
+      return createSinpapelClient({ ...options, signal: ctrl.signal })
+    }
+
+    function cleanupClient(targetClient) {
+      for (const ctrl of inFlight) {
+        if (targetClient.signal === ctrl.signal) {
+          inFlight.delete(ctrl)
+          break
+        }
+      }
+    }
+
+    async function run(fn, key) {
+      if (key) loading[key] = true
       error.value = null
       try {
         return await fn()
       } catch (e) {
+        if (isCancelError(e)) {
+          throw e
+        }
         error.value = e.response?.data ?? { detail: e.message }
         throw e
       } finally {
-        loading.value = false
+        if (key) loading[key] = false
       }
     }
 
     async function cargarEstados() {
-      estados.value = await client.availableTransitions()
+      return run(async () => {
+        const c = makeClient()
+        try {
+          estados.value = await c.availableTransitions()
+        } finally {
+          cleanupClient(c)
+        }
+      }, 'estados')
     }
     async function cargarHistorial(page = 1) {
-      const data = await client.history({ page })
-      historial.value = Array.isArray(data) ? data : (data.results ?? [])
-      historialCount.value = Array.isArray(data) ? data.length : (data.count ?? historial.value.length)
+      return run(async () => {
+        const c = makeClient()
+        try {
+          const data = await c.history({ page })
+          historial.value = Array.isArray(data) ? data : (data.results ?? [])
+          historialCount.value = Array.isArray(data) ? data.length : (data.count ?? historial.value.length)
+        } finally {
+          cleanupClient(c)
+        }
+      }, 'historial')
     }
     async function ejecutarTransicion(payload) {
       return run(async () => {
-        const result = await client.transition(payload)
-        await cargarEstados()
-        await cargarHistorial()
-        return result
-      })
+        const c = makeClient()
+        try {
+          const result = await c.transition(payload)
+          await cargarEstados()
+          await cargarHistorial()
+          return result
+        } finally {
+          cleanupClient(c)
+        }
+      }, 'transicion')
     }
     async function cargarMetadatos() {
-      metadatos.value = await client.getMetadatos()
+      return run(async () => {
+        const c = makeClient()
+        try {
+          metadatos.value = await c.getMetadatos()
+        } finally {
+          cleanupClient(c)
+        }
+      }, 'metadatos')
     }
     async function guardarMetadatos(values) {
       return run(async () => {
-        const updated = await client.patchMetadatos(values)
-        metadatos.value = { ...metadatos.value, values: updated }
-        return updated
-      })
+        const c = makeClient()
+        try {
+          const updated = await c.patchMetadatos(values)
+          metadatos.value = { ...metadatos.value, values: updated }
+          return updated
+        } finally {
+          cleanupClient(c)
+        }
+      }, 'metadatos')
     }
     async function cargarPreview(targetState) {
-      preview.value = await client.previewTransition(targetState)
-      return preview.value
+      const c = makeClient()
+      try {
+        preview.value = await c.previewTransition(targetState)
+        return preview.value
+      } finally {
+        cleanupClient(c)
+      }
     }
     async function evaluarSla() {
-      slaActions.value = await client.slaStatus()
-      return slaActions.value
+      const c = makeClient()
+      try {
+        slaActions.value = await c.slaStatus()
+        return slaActions.value
+      } finally {
+        cleanupClient(c)
+      }
     }
 
     return {
       client, estados, historial, historialCount, metadatos, preview, slaActions,
       loading, error,
+      cancel,
       cargarEstados, cargarHistorial, ejecutarTransicion,
       cargarMetadatos, guardarMetadatos, cargarPreview, evaluarSla,
     }

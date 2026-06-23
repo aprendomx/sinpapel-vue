@@ -1,0 +1,51 @@
+.sp-btn {
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+}
+
+.sp-btn--primary {
+  background: var(--sp-color-primary);
+  color: var(--sp-color-on-primary);
+}
+
+.sp-btn--primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.sp-btn--ghost {
+  background: transparent;
+  color: var(--sp-text-muted);
+  border: 1px solid var(--sp-border);
+}
+
+.sp-input,
+.sp-select {
+  padding: 7px 10px;
+  border: 1px solid var(--sp-border);
+  border-radius: 6px;
+  font: inherit;
+  color: var(--sp-text);
+  background: var(--sp-surface);
+}
+
+.sp-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sp-text);
+}
+
+.sp-error {
+  color: var(--sp-danger);
+  font-size: 12px;
+  margin: 0;
+}
+
+.sp-actions {
+  display: flex;
+  justify-content: flex-end;
+}

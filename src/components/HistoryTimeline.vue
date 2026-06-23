@@ -19,12 +19,37 @@
         <div class="sp-tl-user">{{ item.history_user || 'Sistema' }}</div>
       </div>
     </div>
+
+    <div v-if="showPager" class="sp-tl-pager">
+      <button class="sp-tl-pager__prev" :disabled="page <= 1" @click="$emit('prev')">{{ labels.anterior }}</button>
+      <span class="sp-tl-pager__info">{{ labels.pagina }} {{ page }} {{ labels.de }} {{ totalPages }}</span>
+      <button class="sp-tl-pager__next" :disabled="page >= totalPages" @click="$emit('next')">{{ labels.siguiente }}</button>
+    </div>
   </div>
-  <div v-else class="sp-tl-empty">Sin movimientos registrados</div>
+  <div v-else class="sp-tl-empty">{{ labels.sinMovimientos }}</div>
 </template>
 
 <script setup>
-defineProps({ entries: { type: Array, default: () => [] } })
+import { computed } from 'vue'
+import { useSpLabels } from '../composables/useSpLabels.js'
+
+const labels = useSpLabels()
+
+const props = defineProps({
+  entries: { type: Array, default: () => [] },
+  page: { type: Number, default: 1 },
+  pageSize: { type: Number, default: 0 },
+  count: { type: Number, default: 0 },
+})
+
+defineEmits(['prev', 'next'])
+
+const totalPages = computed(() => {
+  if (!props.pageSize || props.pageSize <= 0) return 1
+  return Math.ceil(props.count / props.pageSize)
+})
+
+const showPager = computed(() => totalPages.value > 1)
 
 const ICONS = { '+': 'add_circle', '~': 'edit', '-': 'remove_circle' }
 const LABELS = { '+': 'Creado', '~': 'Modificado', '-': 'Eliminado' }
@@ -58,5 +83,19 @@ const formatDate = (d) => {
 .sp-tl-empty {
   text-align: center; padding: 36px 16px;
   color: var(--sp-text-muted); font-family: var(--sp-font); font-size: 13px;
+}
+.sp-tl-pager {
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+  margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--sp-border);
+}
+.sp-tl-pager__prev, .sp-tl-pager__next {
+  padding: 6px 12px; border-radius: 6px; border: 1px solid var(--sp-border);
+  background: var(--sp-surface); color: var(--sp-text); cursor: pointer; font: inherit; font-size: 12px;
+}
+.sp-tl-pager__prev:disabled, .sp-tl-pager__next:disabled {
+  opacity: 0.5; cursor: not-allowed;
+}
+.sp-tl-pager__info {
+  font-size: 12px; color: var(--sp-text-muted);
 }
 </style>

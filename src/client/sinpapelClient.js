@@ -25,7 +25,7 @@ export function buildTransitionRequest(payload) {
   return { body: payload, config: {} }
 }
 
-export function createSinpapelClient({ axios, basePath = '/sinpapel/api', resource, pk = null } = {}) {
+export function createSinpapelClient({ axios, basePath = '/sinpapel/api', resource, pk = null, signal } = {}) {
   if (!axios) throw new Error('createSinpapelClient: `axios` instance is required')
   if (!resource) throw new Error('createSinpapelClient: `resource` slug is required')
 
@@ -35,35 +35,55 @@ export function createSinpapelClient({ axios, basePath = '/sinpapel/api', resour
     axios,
     resource,
     pk,
+    signal,
     async availableTransitions() {
-      const { data } = await axios.get(`${base()}/available-transitions/`)
+      const url = `${base()}/available-transitions/`
+      const { data } = signal ? await axios.get(url, { signal }) : await axios.get(url)
       return data
     },
     async history({ page = 1, pageSize } = {}) {
       const params = { page }
       if (pageSize) params.page_size = pageSize
-      const { data } = await axios.get(`${base()}/history/`, { params })
+      const url = `${base()}/history/`
+      const { data } = signal
+        ? await axios.get(url, { params, signal })
+        : await axios.get(url, { params })
       return data
     },
-    async previewTransition(targetState) {
-      const { data } = await axios.post(`${base()}/preview-transition/`, { target_state: targetState })
+    async previewTransition(targetState, { signal: callSignal } = {}) {
+      const url = `${base()}/preview-transition/`
+      const body = { target_state: targetState }
+      const s = callSignal || signal
+      const { data } = s
+        ? await axios.post(url, body, { signal: s })
+        : await axios.post(url, body)
       return data
     },
     async getMetadatos() {
-      const { data } = await axios.get(`${base()}/metadatos/`)
+      const url = `${base()}/metadatos/`
+      const { data } = signal ? await axios.get(url, { signal }) : await axios.get(url)
       return data
     },
     async patchMetadatos(values) {
-      const { data } = await axios.patch(`${base()}/metadatos/`, values)
+      const url = `${base()}/metadatos/`
+      const { data } = signal
+        ? await axios.patch(url, values, { signal })
+        : await axios.patch(url, values)
       return data
     },
     async slaStatus() {
-      const { data } = await axios.post(`${base()}/sla-status/`)
+      const url = `${base()}/sla-status/`
+      const { data } = signal
+        ? await axios.post(url, null, { signal })
+        : await axios.post(url, null)
       return data
     },
     async transition(payload) {
       const { body, config } = buildTransitionRequest(payload)
-      const { data } = await axios.post(`${base()}/transition/`, body, config)
+      const url = `${base()}/transition/`
+      const { data } = signal
+        ? await axios.post(url, body, { ...config, signal })
+        : await axios.post(url, body, config)
       return data
     },
   }

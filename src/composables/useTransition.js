@@ -30,6 +30,7 @@ export function useTransition(client) {
   })
   const loading = ref(false)
   const error = ref(null)
+  const errors = reactive({})
 
   const signaturePayload = computed(() =>
     buildSignaturePayload(signatureBackend.value, signatureMode.value, signatureFields),
@@ -45,11 +46,51 @@ export function useTransition(client) {
     return payload
   }
 
+  function validate() {
+    Object.keys(errors).forEach((k) => delete errors[k])
+    let ok = true
+    if (!targetState.value) {
+      errors.targetState = 'Selecciona un estado destino.'
+      ok = false
+    }
+    if (montoAprobado.value != null && montoAprobado.value !== '' && Number(montoAprobado.value) <= 0) {
+      errors.montoAprobado = 'El monto debe ser mayor a 0.'
+      ok = false
+    }
+    if (signatureBackend.value === 'fiel' && signatureMode.value === 'server-side') {
+      if (!signatureFields.cer_file) { errors.cer_file = 'Selecciona el archivo .cer.'; ok = false }
+      if (!signatureFields.key_file) { errors.key_file = 'Selecciona el archivo .key.'; ok = false }
+      if (!signatureFields.password) { errors.password = 'Ingresa la contraseña.'; ok = false }
+    }
+    return ok
+  }
+
+  function reset() {
+    targetState.value = null
+    comentarios.value = ''
+    montoAprobado.value = null
+    condiciones.value = ''
+    signatureBackend.value = null
+    signatureMode.value = 'client-side'
+    signatureFields.firma_b64 = ''
+    signatureFields.certificado_cer_b64 = ''
+    signatureFields.cer_file = null
+    signatureFields.key_file = null
+    signatureFields.password = ''
+    signatureFields.scanned_image_path = ''
+    signatureFields.witness_name = ''
+    error.value = null
+    Object.keys(errors).forEach((k) => delete errors[k])
+  }
+
   async function submit() {
+    if (!validate()) return
     loading.value = true
     error.value = null
     try {
-      return await client.transition(buildPayload())
+      const result = await client.transition(buildPayload())
+      reset()
+      return result
     } catch (e) {
       error.value = e.response?.data ?? { detail: e.message }
       throw e
@@ -61,6 +102,6 @@ export function useTransition(client) {
   return {
     targetState, comentarios, montoAprobado, condiciones,
     signatureBackend, signatureMode, signatureFields, signaturePayload,
-    loading, error, buildPayload, submit,
+    loading, error, errors, buildPayload, submit, reset, validate,
   }
 }

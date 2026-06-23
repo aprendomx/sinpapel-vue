@@ -1,4 +1,5 @@
 import './styles/tokens.css'
+import './styles/components.css'
 
 export { createSinpapelClient, buildTransitionRequest } from './client/sinpapelClient.js'
 export { useTransition, buildSignaturePayload } from './composables/useTransition.js'

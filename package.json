@@ -2,14 +2,20 @@
   "name": "@aprendomx/sinpapel-vue",
   "version": "0.1.0",
   "description": "Vue 3 workflow-tracking widgets for the sinpapel-drf API",
+  "license": "GPL-3.0",
   "type": "module",
   "files": [
-    "dist"
+    "dist",
+    "types",
+    "README.md",
+    "README.en.md",
+    "LICENSE"
   ],
   "main": "./dist/sinpapel-vue.umd.cjs",
   "module": "./dist/sinpapel-vue.js",
   "exports": {
     ".": {
+      "types": "./types/index.d.ts",
       "import": "./dist/sinpapel-vue.js",
       "require": "./dist/sinpapel-vue.umd.cjs"
     },
@@ -21,8 +27,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint \"{src,demo,tests}/**/*.{js,vue}\"",
-    "gate:tests": "rai-frontend gate check tests --verbose",
-    "gate:baseline": "rai-frontend baseline snapshot"
+    "prepublishOnly": "npm run lint && npm test && npm run build"
   },
   "peerDependencies": {
     "pinia": "^3.0.0",

@@ -1,7 +1,7 @@
 <template>
   <div class="sp-sla">
     <button class="sp-btn sp-btn--primary" :disabled="loading" @click="evaluate">
-      {{ loading ? 'Evaluando…' : 'Evaluar SLA' }}
+      {{ loading ? labels.evaluando : labels.evaluarSLA }}
     </button>
 
     <ul v-if="actions.length" class="sp-sla__list">
@@ -10,15 +10,18 @@
         <span v-if="a.estado"> · {{ a.estado }}</span>
       </li>
     </ul>
-    <p v-else-if="evaluated" class="sp-sla__muted">Sin acciones — al día o no aplica.</p>
+    <p v-else-if="evaluated" class="sp-sla__muted">{{ labels.sinAcciones }}</p>
     <p v-if="error" class="sp-error">{{ error }}</p>
   </div>
 </template>
 
 <script setup>
 import { ref } from 'vue'
+import { useSpLabels } from '../composables/useSpLabels.js'
 
 const props = defineProps({ client: { type: Object, required: true } })
+
+const labels = useSpLabels()
 
 const actions = ref([])
 const loading = ref(false)
@@ -46,8 +49,5 @@ defineExpose({ evaluate })
 .sp-sla__list { margin: 0; padding-left: 18px; }
 .sp-sla__list li { font-size: 13px; color: var(--sp-text); }
 .sp-sla__muted { color: var(--sp-text-muted); font-size: 13px; margin: 0; }
-.sp-error { color: var(--sp-danger); font-size: 12px; margin: 0; }
-.sp-btn { padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer; font: inherit; font-weight: 600; width: fit-content; }
-.sp-btn--primary { background: var(--sp-color-primary); color: var(--sp-color-on-primary); }
-.sp-btn--primary:disabled { opacity: 0.6; cursor: not-allowed; }
+.sp-btn { width: fit-content; }
 </style>

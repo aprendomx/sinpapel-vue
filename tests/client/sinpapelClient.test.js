@@ -62,4 +62,35 @@ describe('createSinpapelClient', () => {
     expect(body.get('signature.password')).toBe('pw')
     expect(config.headers['Content-Type']).toBe('multipart/form-data')
   })
+
+  it('passes signal to axios.get when provided', async () => {
+    const axios = mockAxios()
+    const controller = new AbortController()
+    const c = createSinpapelClient({ axios, resource: 'r', pk: 1, signal: controller.signal })
+    await c.availableTransitions()
+    expect(axios.get).toHaveBeenCalledWith('/sinpapel/api/r/1/available-transitions/', { signal: controller.signal })
+  })
+
+  it('passes signal to axios.post when provided', async () => {
+    const axios = mockAxios()
+    const controller = new AbortController()
+    const c = createSinpapelClient({ axios, resource: 'r', pk: 1, signal: controller.signal })
+    await c.previewTransition('X')
+    expect(axios.post).toHaveBeenCalledWith('/sinpapel/api/r/1/preview-transition/', { target_state: 'X' }, { signal: controller.signal })
+  })
+
+  it('passes signal to axios.patch when provided', async () => {
+    const axios = mockAxios()
+    const controller = new AbortController()
+    const c = createSinpapelClient({ axios, resource: 'r', pk: 1, signal: controller.signal })
+    await c.patchMetadatos({ monto: 10 })
+    expect(axios.patch).toHaveBeenCalledWith('/sinpapel/api/r/1/metadatos/', { monto: 10 }, { signal: controller.signal })
+  })
+
+  it('does not pass signal when not provided', async () => {
+    const axios = mockAxios()
+    const c = createSinpapelClient({ axios, resource: 'r', pk: 1 })
+    await c.availableTransitions()
+    expect(axios.get).toHaveBeenCalledWith('/sinpapel/api/r/1/available-transitions/')
+  })
 })

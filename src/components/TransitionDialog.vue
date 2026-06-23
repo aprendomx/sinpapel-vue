@@ -1,59 +1,68 @@
 <template>
   <q-dialog v-model="visible" persistent>
-    <q-card class="sp-dialog">
+    <q-card
+      ref="dialogRef"
+      class="sp-dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="sp-dialog-title"
+      @keydown="onKeydown"
+    >
       <div class="sp-dialog__head">
         <q-icon name="swap_horiz" size="18px" />
-        <span>Cambiar estado</span>
+        <span id="sp-dialog-title">{{ labels.cambiarEstado }}</span>
         <q-space />
         <q-btn icon="close" flat round dense size="sm" @click="visible = false" />
       </div>
 
       <div class="sp-dialog__current">
-        <span class="sp-dialog__label">Estado actual</span>
+        <span class="sp-dialog__label">{{ labels.estadoActual }}</span>
         <state-badge :estado="currentState" />
       </div>
 
       <q-card-section>
         <q-form @submit="onSubmit" class="sp-form">
           <div class="sp-field">
-            <label class="sp-label">Nuevo estado *</label>
+            <label class="sp-label">{{ labels.nuevoEstado }} *</label>
             <select v-model="tx.targetState.value" class="sp-select">
-              <option :value="null" disabled>Selecciona…</option>
+              <option :value="null" disabled>{{ labels.selecciona }}</option>
               <option v-for="e in estados" :key="e.id ?? e.nombre" :value="e.nombre">
                 {{ (e.nombre || '').replace(/_/g, ' ') }}
               </option>
             </select>
+            <p v-if="tx.errors.targetState" class="sp-error">{{ tx.errors.targetState }}</p>
           </div>
 
           <div class="sp-field">
-            <label class="sp-label">Comentarios</label>
+            <label class="sp-label">{{ labels.comentarios }}</label>
             <textarea v-model="tx.comentarios.value" rows="3" class="sp-input"></textarea>
           </div>
 
           <div class="sp-field">
-            <label class="sp-label">Monto aprobado (opcional)</label>
+            <label class="sp-label">{{ labels.montoAprobado }}</label>
             <input v-model.number="tx.montoAprobado.value" type="number" class="sp-input" />
+            <p v-if="tx.errors.montoAprobado" class="sp-error">{{ tx.errors.montoAprobado }}</p>
           </div>
 
           <div class="sp-field">
-            <label class="sp-label">Condiciones (opcional)</label>
+            <label class="sp-label">{{ labels.condiciones }}</label>
             <textarea v-model="tx.condiciones.value" rows="2" class="sp-input"></textarea>
           </div>
 
           <!-- Signature backend selector -->
           <fieldset class="sp-sig">
-            <legend>Firma</legend>
+            <legend>{{ labels.firma }}</legend>
             <select v-model="tx.signatureBackend.value" class="sp-select">
-              <option :value="null">Sin firma</option>
-              <option value="fiel">FIEL (e.firma SAT)</option>
-              <option value="manual">Manual (escaneo + testigo)</option>
-              <option value="fake">Fake (pruebas)</option>
+              <option :value="null">{{ labels.sinFirma }}</option>
+              <option value="fiel">{{ labels.fiel }}</option>
+              <option value="manual">{{ labels.manual }}</option>
+              <option value="fake">{{ labels.fake }}</option>
             </select>
 
             <template v-if="tx.signatureBackend.value === 'fiel'">
               <select v-model="tx.signatureMode.value" class="sp-select">
-                <option value="client-side">Cliente (firma_b64)</option>
-                <option value="server-side">Servidor (.cer/.key)</option>
+                <option value="client-side">{{ labels.cliente }}</option>
+                <option value="server-side">{{ labels.servidor }}</option>
               </select>
               <template v-if="tx.signatureMode.value === 'client-side'">
                 <input v-model="tx.signatureFields.firma_b64" placeholder="firma_b64" class="sp-input" />
@@ -61,8 +70,11 @@
               </template>
               <template v-else>
                 <input type="file" accept=".cer" @change="e => tx.signatureFields.cer_file = e.target.files[0]" />
+                <p v-if="tx.errors.cer_file" class="sp-error">{{ tx.errors.cer_file }}</p>
                 <input type="file" accept=".key" @change="e => tx.signatureFields.key_file = e.target.files[0]" />
-                <input v-model="tx.signatureFields.password" type="password" placeholder="Contraseña e.firma" class="sp-input" />
+                <p v-if="tx.errors.key_file" class="sp-error">{{ tx.errors.key_file }}</p>
+                <input v-model="tx.signatureFields.password" type="password" :placeholder="labels.contrasena" class="sp-input" />
+                <p v-if="tx.errors.password" class="sp-error">{{ tx.errors.password }}</p>
               </template>
             </template>
             <template v-else-if="tx.signatureBackend.value === 'manual'">
@@ -71,12 +83,14 @@
             </template>
           </fieldset>
 
-          <p v-if="tx.error.value" class="sp-error">{{ errorText }}</p>
+          <div class="sp-dialog__errors" aria-live="polite">
+            <p v-if="tx.error.value" class="sp-error">{{ errorText }}</p>
+          </div>
 
           <div class="sp-actions">
-            <button type="button" class="sp-btn sp-btn--ghost" @click="visible = false">Cancelar</button>
+            <button type="button" class="sp-btn sp-btn--ghost" @click="visible = false">{{ labels.cancelar }}</button>
             <button type="submit" class="sp-btn sp-btn--primary" :disabled="tx.loading.value">
-              {{ tx.loading.value ? 'Enviando…' : 'Confirmar' }}
+              {{ tx.loading.value ? labels.enviando : labels.confirmar }}
             </button>
           </div>
         </q-form>
@@ -86,9 +100,12 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, watch, nextTick } from 'vue'
 import { useTransition } from '../composables/useTransition.js'
+import { useSpLabels } from '../composables/useSpLabels.js'
 import StateBadge from './StateBadge.vue'
+
+const labels = useSpLabels()
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -103,6 +120,9 @@ const visible = computed({
   set: (v) => emit('update:modelValue', v),
 })
 
+const dialogRef = ref(null)
+let previousFocus = null
+
 const tx = useTransition(props.client)
 
 const errorText = computed(() => {
@@ -112,10 +132,44 @@ const errorText = computed(() => {
   return e.detail || JSON.stringify(e)
 })
 
+function focusableElements(root) {
+  if (!root) return []
+  return Array.from(root.querySelectorAll(
+    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+  )).filter((el) => !el.disabled && el.offsetParent !== null)
+}
+
+function onKeydown(event) {
+  if (event.key !== 'Tab') return
+  const elements = focusableElements(dialogRef.value?.$el)
+  if (elements.length === 0) return
+  const first = elements[0]
+  const last = elements[elements.length - 1]
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault()
+    last.focus()
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault()
+    first.focus()
+  }
+}
+
+watch(() => props.modelValue, async (isOpen) => {
+  if (isOpen) {
+    previousFocus = document.activeElement
+    await nextTick()
+    const elements = focusableElements(dialogRef.value?.$el)
+    elements[0]?.focus()
+  } else if (previousFocus) {
+    previousFocus.focus()
+    previousFocus = null
+  }
+})
+
 async function onSubmit() {
-  if (!tx.targetState.value) return
   try {
     const result = await tx.submit()
+    if (result === undefined) return // validation failed
     emit('transitioned', result)
     visible.value = false
   } catch {
@@ -133,14 +187,7 @@ defineExpose({ tx, onSubmit })
 .sp-dialog__label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--sp-text-muted); }
 .sp-form { display: flex; flex-direction: column; gap: 12px; }
 .sp-field { display: flex; flex-direction: column; gap: 4px; }
-.sp-label { font-size: 12px; font-weight: 600; color: var(--sp-text); }
-.sp-input, .sp-select { padding: 7px 10px; border: 1px solid var(--sp-border); border-radius: 6px; font: inherit; color: var(--sp-text); background: var(--sp-surface); }
 .sp-sig { border: 1px solid var(--sp-border); border-radius: 6px; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
 .sp-sig legend { font-size: 12px; font-weight: 700; color: var(--sp-text); padding: 0 4px; }
-.sp-error { color: var(--sp-danger); font-size: 12px; margin: 0; }
-.sp-actions { display: flex; justify-content: flex-end; gap: 10px; }
-.sp-btn { padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer; font: inherit; font-weight: 600; }
-.sp-btn--ghost { background: transparent; color: var(--sp-text-muted); border: 1px solid var(--sp-border); }
-.sp-btn--primary { background: var(--sp-color-primary); color: var(--sp-color-on-primary); }
-.sp-btn--primary:disabled { opacity: 0.6; cursor: not-allowed; }
+.sp-actions { gap: 10px; }
 </style>
