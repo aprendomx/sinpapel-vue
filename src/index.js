@@ -4,3 +4,4 @@ export { createSinpapelClient, buildTransitionRequest } from './client/sinpapelC
 export { useTransition, buildSignaturePayload } from './composables/useTransition.js'
 export { useSeguimientoStore } from './stores/useSeguimientoStore.js'
 export { default as StateBadge } from './components/StateBadge.vue'
+export { default as HistoryTimeline } from './components/HistoryTimeline.vue'
