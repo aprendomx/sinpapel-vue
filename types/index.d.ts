@@ -10,6 +10,7 @@ export interface SinpapelClientOptions {
     get: (url: string, config?: Record<string, unknown>) => Promise<{ data: unknown }>
     post: (url: string, body?: unknown, config?: Record<string, unknown>) => Promise<{ data: unknown }>
     patch: (url: string, body?: unknown, config?: Record<string, unknown>) => Promise<{ data: unknown }>
+    delete: (url: string, config?: Record<string, unknown>) => Promise<{ data: unknown }>
   }
   basePath?: string
   resource: string
@@ -29,6 +30,10 @@ export interface SinpapelClient {
   patchMetadatos: (values: Record<string, unknown>) => Promise<Record<string, unknown>>
   slaStatus: () => Promise<SlaAction[]>
   transition: (payload: TransitionPayload) => Promise<TransitionResult>
+  listDocumentos: () => Promise<InstanciaDocumento[]>
+  uploadDocumento: (payload: DocumentoUploadPayload) => Promise<InstanciaDocumento>
+  deleteDocumento: (docId: number | string) => Promise<unknown>
+  requisitos: () => Promise<RequisitoStatus[]>
 }
 
 export function createSinpapelClient(options: SinpapelClientOptions): SinpapelClient
@@ -39,6 +44,21 @@ export interface TransitionRequest {
 }
 
 export function buildTransitionRequest(payload: TransitionPayload): TransitionRequest
+
+export interface DocumentoUploadPayload {
+  archivo: File | Blob
+  documento?: number | null
+  tipo_documento?: number | null
+  porcentaje?: number
+  metadatos?: Record<string, unknown>
+}
+
+export interface DocumentoUploadRequest {
+  body: FormData
+  config: Record<string, unknown>
+}
+
+export function buildDocumentoUpload(payload: DocumentoUploadPayload): DocumentoUploadRequest
 
 // ------------------------------------------------------------------
 // Payloads & Responses
@@ -124,6 +144,25 @@ export interface SlaAction {
   estado?: string
 }
 
+export interface InstanciaDocumento {
+  id: number
+  documento: number | null
+  tipo_documento?: string | null
+  archivo?: string | null
+  porcentaje: number
+  creado?: string | null
+}
+
+export interface RequisitoStatus {
+  nivel: string
+  tipo_documento?: string | null
+  porcentaje_requerido?: number | null
+  porcentaje_actual?: number | null
+  satisfecho: boolean
+  auto_carga?: boolean
+  mensaje?: string
+}
+
 // ------------------------------------------------------------------
 // Composables
 // ------------------------------------------------------------------
@@ -174,7 +213,12 @@ export interface SeguimientoStoreState {
   metadatos: MetadatosResponse
   preview: PreviewReport | null
   slaActions: SlaAction[]
-  loading: { estados: boolean; historial: boolean; metadatos: boolean; transicion: boolean }
+  documentos: InstanciaDocumento[]
+  requisitos: RequisitoStatus[]
+  loading: {
+    estados: boolean; historial: boolean; metadatos: boolean; transicion: boolean
+    documentos: boolean; requisitos: boolean
+  }
   error: unknown
 }
 
@@ -187,6 +231,10 @@ export interface SeguimientoStoreActions {
   guardarMetadatos: (values: Record<string, unknown>) => Promise<Record<string, unknown>>
   cargarPreview: (targetState: string) => Promise<PreviewReport>
   evaluarSla: () => Promise<SlaAction[]>
+  cargarRequisitos: () => Promise<void>
+  cargarDocumentos: () => Promise<void>
+  subirDocumento: (payload: DocumentoUploadPayload) => Promise<InstanciaDocumento>
+  eliminarDocumento: (docId: number | string) => Promise<void>
 }
 
 export type SeguimientoStore = Store<string, SeguimientoStoreState, {}, SeguimientoStoreActions>
@@ -231,6 +279,14 @@ export const MetadatosForm: DefineComponent<{
 export const SlaStatusPanel: DefineComponent<{
   client: SinpapelClient
 }>
+
+export const RequisitosPanel: DefineComponent<{
+  client: SinpapelClient
+}>
+
+export const DocumentosPanel: DefineComponent<{
+  client: SinpapelClient
+}, {}, { changed: [] }>
 
 export const SeguimientoPanel: DefineComponent<{
   axios: SinpapelClientOptions['axios']

@@ -170,6 +170,32 @@ Panel to evaluate SLA status (admin only).
 |------|------|----------|
 | `client` | `Object` | Yes |
 
+### RequisitosPanel
+
+Read-only checklist of documentary requirements for the current state.
+Consumes `GET …/requisitos/`.
+
+**Props:**
+
+| Prop | Type | Required |
+|------|------|----------|
+| `client` | `Object` | Yes |
+
+### DocumentosPanel
+
+Lists, uploads (multipart) and deletes documents for the case. Consumes
+`GET/POST …/documentos/` and `DELETE …/documentos/{id}/`. In the upload form
+provide the **Document ID** or the **Document type ID** (one of the two) plus
+the file.
+
+**Props:**
+
+| Prop | Type | Required |
+|------|------|----------|
+| `client` | `Object` | Yes |
+
+**Emits:** `changed` (after upload or delete).
+
 ---
 
 ## Client API
@@ -196,6 +222,12 @@ const client = createSinpapelClient({
 | `patchMetadatos(values)` | PATCH | `/{resource}/{pk}/metadatos/` | updated `values` |
 | `slaStatus()` | POST | `/{resource}/{pk}/sla-status/` | `SlaAction[]` |
 | `transition(payload)` | POST | `/{resource}/{pk}/transition/` | `TransitionResult` |
+| `requisitos()` | GET | `/{resource}/{pk}/requisitos/` | `RequisitoStatus[]` |
+| `listDocumentos()` | GET | `/{resource}/{pk}/documentos/` | `InstanciaDocumento[]` |
+| `uploadDocumento(payload)` | POST | `/{resource}/{pk}/documentos/` | `InstanciaDocumento` |
+| `deleteDocumento(id)` | DELETE | `/{resource}/{pk}/documentos/{id}/` | — |
+
+`uploadDocumento({ archivo, documento?, tipo_documento?, porcentaje?, metadatos? })` is sent as `multipart/form-data` and must include `documento` **or** `tipo_documento`. The `buildDocumentoUpload(payload)` helper builds the `FormData` (encoding `metadatos` as JSON).
 
 All calls support `AbortController` for cancellation. The store creates an `AbortController` per action and exposes `cancel()`.
 
@@ -231,12 +263,13 @@ const store = useSeguimientoStore({ axios, resource: 'solicitudes', pk: 42 })
 ```
 
 **Reactive state:**
-- `estados`, `historial`, `historialCount`, `metadatos`, `preview`, `slaActions`
-- `loading`: `{ estados: boolean, historial: boolean, metadatos: boolean, transicion: boolean }`
+- `estados`, `historial`, `historialCount`, `metadatos`, `preview`, `slaActions`, `documentos`, `requisitos`
+- `loading`: `{ estados, historial, metadatos, transicion, documentos, requisitos }` (booleans)
 - `error`: last API error
 
 **Actions:**
 - `cargarEstados()`, `cargarHistorial(page?)`, `ejecutarTransicion(payload)`, `cargarMetadatos()`, `guardarMetadatos(values)`, `cargarPreview(targetState)`, `evaluarSla()`
+- `cargarRequisitos()`, `cargarDocumentos()`, `subirDocumento(payload)`, `eliminarDocumento(id)` (the last two refresh list + requirements)
 - `cancel()`: aborts all in-flight requests
 
 ---

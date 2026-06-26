@@ -20,7 +20,12 @@ export function useSeguimientoStore(options) {
     const metadatos = ref({ schema: [], values: {} })
     const preview = ref(null)
     const slaActions = ref([])
-    const loading = reactive({ estados: false, historial: false, metadatos: false, transicion: false })
+    const documentos = ref([])
+    const requisitos = ref([])
+    const loading = reactive({
+      estados: false, historial: false, metadatos: false, transicion: false,
+      documentos: false, requisitos: false,
+    })
     const error = ref(null)
 
     const inFlight = new Set()
@@ -138,13 +143,60 @@ export function useSeguimientoStore(options) {
         cleanupClient(c)
       }
     }
+    async function cargarRequisitos() {
+      return run(async () => {
+        const c = makeClient()
+        try {
+          requisitos.value = await c.requisitos()
+        } finally {
+          cleanupClient(c)
+        }
+      }, 'requisitos')
+    }
+    async function cargarDocumentos() {
+      return run(async () => {
+        const c = makeClient()
+        try {
+          documentos.value = await c.listDocumentos()
+        } finally {
+          cleanupClient(c)
+        }
+      }, 'documentos')
+    }
+    async function subirDocumento(payload) {
+      return run(async () => {
+        const c = makeClient()
+        try {
+          const created = await c.uploadDocumento(payload)
+          await cargarDocumentos()
+          await cargarRequisitos()
+          return created
+        } finally {
+          cleanupClient(c)
+        }
+      }, 'documentos')
+    }
+    async function eliminarDocumento(docId) {
+      return run(async () => {
+        const c = makeClient()
+        try {
+          await c.deleteDocumento(docId)
+          await cargarDocumentos()
+          await cargarRequisitos()
+        } finally {
+          cleanupClient(c)
+        }
+      }, 'documentos')
+    }
 
     return {
       client, estados, historial, historialCount, metadatos, preview, slaActions,
+      documentos, requisitos,
       loading, error,
       cancel,
       cargarEstados, cargarHistorial, ejecutarTransicion,
       cargarMetadatos, guardarMetadatos, cargarPreview, evaluarSla,
+      cargarRequisitos, cargarDocumentos, subirDocumento, eliminarDocumento,
     }
   })
   return define()

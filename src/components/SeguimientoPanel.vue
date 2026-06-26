@@ -31,6 +31,8 @@
           <option v-for="e in store.estados" :key="e.id ?? e.nombre" :value="e.nombre">{{ e.nombre }}</option>
         </select>
       </div>
+      <requisitos-panel v-if="tab === 'requisitos'" :client="store.client" />
+      <documentos-panel v-if="tab === 'documentos'" :client="store.client" />
       <metadatos-form v-if="tab === 'metadatos'" :client="store.client" @saved="store.cargarMetadatos()" />
       <sla-status-panel v-if="tab === 'sla' && canEvaluateSla" :client="store.client" />
     </section>
@@ -56,6 +58,8 @@ import TransitionDialog from './TransitionDialog.vue'
 import PreviewTransitionPanel from './PreviewTransitionPanel.vue'
 import MetadatosForm from './MetadatosForm.vue'
 import SlaStatusPanel from './SlaStatusPanel.vue'
+import RequisitosPanel from './RequisitosPanel.vue'
+import DocumentosPanel from './DocumentosPanel.vue'
 
 const props = defineProps({
   axios: { type: Object, required: true },
@@ -95,6 +99,8 @@ const labels = new Proxy({}, {
 const visibleTabs = computed(() => {
   const tabs = [
     { key: 'historial', label: labels.historial },
+    { key: 'requisitos', label: labels.requisitos },
+    { key: 'documentos', label: labels.documentos },
     { key: 'preview', label: labels.previsualizar },
     { key: 'metadatos', label: labels.metadatos },
   ]

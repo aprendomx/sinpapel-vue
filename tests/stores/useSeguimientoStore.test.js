@@ -7,6 +7,7 @@ function mockAxios() {
     get: vi.fn(),
     post: vi.fn().mockResolvedValue({ data: { success: true } }),
     patch: vi.fn(),
+    delete: vi.fn().mockResolvedValue({ data: null }),
   }
 }
 
@@ -144,5 +145,49 @@ describe('useSeguimientoStore', () => {
       null,
       expect.objectContaining({ signal: expect.any(AbortSignal) })
     )
+  })
+
+  it('loads requisitos and documentos', async () => {
+    const axios = mockAxios()
+    axios.get.mockImplementation((url) => {
+      if (url.endsWith('/requisitos/')) return Promise.resolve({ data: [{ nivel: 'estado', satisfecho: false }] })
+      if (url.endsWith('/documentos/')) return Promise.resolve({ data: [{ id: 9, porcentaje: 100 }] })
+      return Promise.resolve({ data: [] })
+    })
+    const store = useSeguimientoStore({ axios, resource: 'r', pk: 1 })
+
+    await store.cargarRequisitos()
+    expect(store.requisitos).toEqual([{ nivel: 'estado', satisfecho: false }])
+
+    await store.cargarDocumentos()
+    expect(store.documentos).toEqual([{ id: 9, porcentaje: 100 }])
+  })
+
+  it('subirDocumento uploads then refreshes documentos + requisitos', async () => {
+    const axios = mockAxios()
+    axios.get.mockResolvedValue({ data: [] })
+    axios.post.mockResolvedValue({ data: { id: 1 } })
+    const store = useSeguimientoStore({ axios, resource: 'r', pk: 1 })
+
+    await store.subirDocumento({ archivo: new Blob(['x']), tipo_documento: 2 })
+    expect(axios.post).toHaveBeenCalledWith(
+      '/sinpapel/api/r/1/documentos/',
+      expect.any(FormData),
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    )
+    expect(axios.get).toHaveBeenCalledTimes(2) // documentos + requisitos refresh
+  })
+
+  it('eliminarDocumento deletes then refreshes', async () => {
+    const axios = mockAxios()
+    axios.get.mockResolvedValue({ data: [] })
+    const store = useSeguimientoStore({ axios, resource: 'r', pk: 1 })
+
+    await store.eliminarDocumento(7)
+    expect(axios.delete).toHaveBeenCalledWith(
+      '/sinpapel/api/r/1/documentos/7/',
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    )
+    expect(axios.get).toHaveBeenCalledTimes(2)
   })
 })

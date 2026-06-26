@@ -25,6 +25,22 @@ export function buildTransitionRequest(payload) {
   return { body: payload, config: {} }
 }
 
+/**
+ * Encodes a documento upload (POST .../documentos/) as multipart/form-data.
+ * Requires `archivo` (File/Blob) plus `documento` (PK) OR `tipo_documento` (PK).
+ * `metadatos` (object) is JSON-encoded — DRF's JSONField parses it from the
+ * multipart string. Omits null/undefined optionals so the serializer defaults.
+ */
+export function buildDocumentoUpload({ archivo, documento, tipo_documento, porcentaje, metadatos } = {}) {
+  const fd = new FormData()
+  fd.append('archivo', archivo)
+  if (documento != null) fd.append('documento', String(documento))
+  if (tipo_documento != null) fd.append('tipo_documento', String(tipo_documento))
+  if (porcentaje != null) fd.append('porcentaje', String(porcentaje))
+  if (metadatos != null) fd.append('metadatos', JSON.stringify(metadatos))
+  return { body: fd, config: { headers: { 'Content-Type': 'multipart/form-data' } } }
+}
+
 export function createSinpapelClient({ axios, basePath = '/sinpapel/api', resource, pk = null, signal } = {}) {
   if (!axios) throw new Error('createSinpapelClient: `axios` instance is required')
   if (!resource) throw new Error('createSinpapelClient: `resource` slug is required')
@@ -76,6 +92,29 @@ export function createSinpapelClient({ axios, basePath = '/sinpapel/api', resour
       const { data } = signal
         ? await axios.post(url, null, { signal })
         : await axios.post(url, null)
+      return data
+    },
+    async listDocumentos() {
+      const url = `${base()}/documentos/`
+      const { data } = signal ? await axios.get(url, { signal }) : await axios.get(url)
+      return data
+    },
+    async uploadDocumento(payload) {
+      const { body, config } = buildDocumentoUpload(payload)
+      const url = `${base()}/documentos/`
+      const { data } = signal
+        ? await axios.post(url, body, { ...config, signal })
+        : await axios.post(url, body, config)
+      return data
+    },
+    async deleteDocumento(docId) {
+      const url = `${base()}/documentos/${docId}/`
+      const { data } = signal ? await axios.delete(url, { signal }) : await axios.delete(url)
+      return data
+    },
+    async requisitos() {
+      const url = `${base()}/requisitos/`
+      const { data } = signal ? await axios.get(url, { signal }) : await axios.get(url)
       return data
     },
     async transition(payload) {

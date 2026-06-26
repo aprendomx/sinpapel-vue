@@ -1,11 +1,12 @@
 import { describe, it, expect, vi } from 'vitest'
-import { createSinpapelClient, buildTransitionRequest } from '../../src/client/sinpapelClient.js'
+import { createSinpapelClient, buildTransitionRequest, buildDocumentoUpload } from '../../src/client/sinpapelClient.js'
 
 function mockAxios() {
   return {
     get: vi.fn().mockResolvedValue({ data: 'GET_OK' }),
     post: vi.fn().mockResolvedValue({ data: 'POST_OK' }),
     patch: vi.fn().mockResolvedValue({ data: 'PATCH_OK' }),
+    delete: vi.fn().mockResolvedValue({ data: 'DELETE_OK' }),
   }
 }
 
@@ -92,5 +93,49 @@ describe('createSinpapelClient', () => {
     const c = createSinpapelClient({ axios, resource: 'r', pk: 1 })
     await c.availableTransitions()
     expect(axios.get).toHaveBeenCalledWith('/sinpapel/api/r/1/available-transitions/')
+  })
+
+  it('lists documentos', async () => {
+    const axios = mockAxios()
+    const c = createSinpapelClient({ axios, resource: 'r', pk: 5 })
+    const r = await c.listDocumentos()
+    expect(axios.get).toHaveBeenCalledWith('/sinpapel/api/r/5/documentos/')
+    expect(r).toBe('GET_OK')
+  })
+
+  it('gets requisitos', async () => {
+    const axios = mockAxios()
+    const c = createSinpapelClient({ axios, resource: 'r', pk: 5 })
+    await c.requisitos()
+    expect(axios.get).toHaveBeenCalledWith('/sinpapel/api/r/5/requisitos/')
+  })
+
+  it('deletes a documento by id', async () => {
+    const axios = mockAxios()
+    const c = createSinpapelClient({ axios, resource: 'r', pk: 5 })
+    await c.deleteDocumento(99)
+    expect(axios.delete).toHaveBeenCalledWith('/sinpapel/api/r/5/documentos/99/')
+  })
+
+  it('uploads a documento as multipart', async () => {
+    const axios = mockAxios()
+    const c = createSinpapelClient({ axios, resource: 'r', pk: 5 })
+    const archivo = new Blob(['pdf'])
+    await c.uploadDocumento({ archivo, tipo_documento: 3, porcentaje: 80, metadatos: { folio: 'A1' } })
+    const [url, body, config] = axios.post.mock.calls[0]
+    expect(url).toBe('/sinpapel/api/r/5/documentos/')
+    expect(body).toBeInstanceOf(FormData)
+    expect(body.get('tipo_documento')).toBe('3')
+    expect(body.get('porcentaje')).toBe('80')
+    expect(body.get('metadatos')).toBe('{"folio":"A1"}')
+    expect(config.headers['Content-Type']).toBe('multipart/form-data')
+  })
+
+  it('buildDocumentoUpload omits absent optionals and sends documento PK', () => {
+    const { body } = buildDocumentoUpload({ archivo: new Blob(['x']), documento: 7 })
+    expect(body.get('documento')).toBe('7')
+    expect(body.get('tipo_documento')).toBeNull()
+    expect(body.get('porcentaje')).toBeNull()
+    expect(body.get('metadatos')).toBeNull()
   })
 })
