@@ -79,7 +79,6 @@ export interface SignaturePayload {
 export interface TransitionPayload {
   target_state: string | null
   comentarios?: string
-  monto_aprobado?: number | null
   condiciones?: string
   signature?: SignaturePayload
 }
@@ -153,14 +152,22 @@ export interface InstanciaDocumento {
   creado?: string | null
 }
 
+export interface DocumentoOpcion {
+  id: number
+  nombre: string
+}
+
 export interface RequisitoStatus {
   nivel: string
   tipo_documento?: string | null
+  tipo_documento_id?: number | null
   porcentaje_requerido?: number | null
   porcentaje_actual?: number | null
   satisfecho: boolean
   auto_carga?: boolean
   mensaje?: string
+  /** Opciones de Documento del tipo del requisito (para el select dependiente). */
+  documentos_disponibles?: DocumentoOpcion[]
 }
 
 // ------------------------------------------------------------------
@@ -170,7 +177,6 @@ export interface RequisitoStatus {
 export interface UseTransitionReturn {
   targetState: Ref<string | null>
   comentarios: Ref<string>
-  montoAprobado: Ref<number | null>
   condiciones: Ref<string>
   signatureBackend: Ref<'fiel' | 'manual' | 'fake' | null>
   signatureMode: Ref<'client-side' | 'server-side'>

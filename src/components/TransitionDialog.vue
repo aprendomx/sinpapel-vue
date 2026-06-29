@@ -39,12 +39,6 @@
           </div>
 
           <div class="sp-field">
-            <label class="sp-label">{{ labels.montoAprobado }}</label>
-            <input v-model.number="tx.montoAprobado.value" type="number" class="sp-input" />
-            <p v-if="tx.errors.montoAprobado" class="sp-error">{{ tx.errors.montoAprobado }}</p>
-          </div>
-
-          <div class="sp-field">
             <label class="sp-label">{{ labels.condiciones }}</label>
             <textarea v-model="tx.condiciones.value" rows="2" class="sp-input"></textarea>
           </div>

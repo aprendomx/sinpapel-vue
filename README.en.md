@@ -184,9 +184,11 @@ Consumes `GET …/requisitos/`.
 ### DocumentosPanel
 
 Lists, uploads (multipart) and deletes documents for the case. Consumes
-`GET/POST …/documentos/` and `DELETE …/documentos/{id}/`. In the upload form
-provide the **Document ID** or the **Document type ID** (one of the two) plus
-the file.
+`GET/POST …/documentos/`, `DELETE …/documentos/{id}/` and `GET …/requisitos/`.
+The upload form uses **selects**: the **document type** comes from the current
+state's requirements and the **document** is a dependent select of the type
+(e.g. "Identificacion" → "Pasaporte"/"INE"). No percentage is asked (it's set
+by the requirement config). Requires `sinpapel-drf >= 0.4.0`.
 
 **Props:**
 
@@ -246,7 +248,7 @@ tx.comentarios.value = 'Approved by committee'
 await tx.submit()  // validates, builds payload, sends, resets on success
 ```
 
-**Returns:** `{ targetState, comentarios, montoAprobado, condiciones, signatureBackend, signatureMode, signatureFields, signaturePayload, loading, error, errors, buildPayload, submit, reset, validate }`
+**Returns:** `{ targetState, comentarios, condiciones, signatureBackend, signatureMode, signatureFields, signaturePayload, loading, error, errors, buildPayload, submit, reset, validate }`
 
 ### useSpLabels()
 

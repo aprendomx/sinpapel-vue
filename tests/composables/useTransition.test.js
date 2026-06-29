@@ -35,10 +35,10 @@ describe('useTransition', () => {
     const t = useTransition({ transition: vi.fn() })
     t.targetState.value = 'APROBADA'
     t.comentarios.value = 'ok'
-    t.montoAprobado.value = 1000
+    t.condiciones.value = 'cond'
     t.signatureBackend.value = 'fake'
     expect(t.buildPayload()).toEqual({
-      target_state: 'APROBADA', comentarios: 'ok', monto_aprobado: 1000, signature: { backend: 'fake' },
+      target_state: 'APROBADA', comentarios: 'ok', condiciones: 'cond', signature: { backend: 'fake' },
     })
   })
   it('submit calls client.transition and captures error body', async () => {
@@ -55,13 +55,11 @@ describe('useTransition', () => {
     const t = useTransition(client)
     t.targetState.value = 'APROBADA'
     t.comentarios.value = 'ok'
-    t.montoAprobado.value = 1000
     t.condiciones.value = 'cond'
     t.signatureBackend.value = 'fake'
     await t.submit()
     expect(t.targetState.value).toBeNull()
     expect(t.comentarios.value).toBe('')
-    expect(t.montoAprobado.value).toBeNull()
     expect(t.condiciones.value).toBe('')
     expect(t.signatureBackend.value).toBeNull()
     expect(t.signatureFields.firma_b64).toBe('')
@@ -84,18 +82,9 @@ describe('useTransition', () => {
     expect(t.errors.password).toBeTruthy()
   })
 
-  it('validate rejects non-positive montoAprobado', () => {
-    const t = useTransition({ transition: vi.fn() })
-    t.targetState.value = 'X'
-    t.montoAprobado.value = 0
-    expect(t.validate()).toBe(false)
-    expect(t.errors.montoAprobado).toBeTruthy()
-  })
-
   it('validate passes when all required fields are valid', () => {
     const t = useTransition({ transition: vi.fn() })
     t.targetState.value = 'X'
-    t.montoAprobado.value = 100
     expect(t.validate()).toBe(true)
     expect(Object.keys(t.errors).length).toBe(0)
   })

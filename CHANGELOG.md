@@ -7,6 +7,40 @@ y el proyecto se adhiere a [Versionado Semántico](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-06-29
+
+### Changed
+
+- `DocumentosPanel`: el formulario de carga ahora usa **selects** en vez de
+  inputs numéricos crudos. El **tipo de documento** se puebla desde
+  `requisitos()` (solo los tipos que el estado actual exige) y el
+  **documento** es un select **dependiente** del tipo (ej. "Identificación" →
+  "Pasaporte" / "INE"), poblado desde el nuevo campo `documentos_disponibles`.
+  Si un tipo tiene una sola opción, se autoselecciona. Se **eliminó** el input
+  de **porcentaje**: lo determina la configuración del requisito
+  (`RequisitoEstadoDocumento.porcentaje`) y la carga usa el default del
+  backend. Cuando el estado no exige documentos se muestra un aviso y se oculta
+  el formulario. Requiere `sinpapel-drf >= 0.4.0`.
+
+### Added
+
+- Tipos `RequisitoStatus.tipo_documento_id`, `RequisitoStatus.documentos_disponibles`
+  y `DocumentoOpcion` (`{ id, nombre }`), reflejando el contrato enriquecido de
+  `GET /requisitos/` en `sinpapel-drf` 0.4.0.
+
+### Removed
+
+- **BREAKING:** Eliminado el campo `monto_aprobado` / `montoAprobado`, que
+  fue removido de `sinpapel` por ser residual. Afecta el payload de
+  transición (`buildPayload`/`buildTransitionRequest` ya no lo emiten), el
+  formulario de `TransitionDialog`, el composable `useTransition` (ref,
+  validación y `reset`), las etiquetas i18n (`es`/`en`) y los tipos
+  TypeScript (`TransitionPayload`, `UseTransitionReturn`).
+- Inputs numéricos de **documento (ID)**, **tipo de documento (ID)** y
+  **porcentaje** del `DocumentosPanel`, junto con sus etiquetas i18n
+  (`documentoId`, `tipoDocumentoId`, `porcentaje`, `documentoOTipoHint`,
+  `opcional`) — reemplazados por los selects descritos arriba.
+
 ## [0.2.0] - 2026-06-26
 
 ### Added

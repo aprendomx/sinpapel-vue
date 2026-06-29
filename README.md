@@ -117,7 +117,7 @@ Linea temporal vertical sobre entradas de historial.
 
 ### TransitionDialog
 
-Dialogo modal para ejecutar una transicion de estado. Incluye selector de estado destino, comentarios, monto aprobado, condiciones y firma polimorfica (FIEL client-side/server-side, manual, fake).
+Dialogo modal para ejecutar una transicion de estado. Incluye selector de estado destino, comentarios, condiciones y firma polimorfica (FIEL client-side/server-side, manual, fake).
 
 **Props:**
 
@@ -184,9 +184,11 @@ Checklist de cumplimiento documental del estado actual (read-only). Consume
 ### DocumentosPanel
 
 Lista, carga (multipart) y borra documentos del tramite. Consume
-`GET/POST …/documentos/` y `DELETE …/documentos/{id}/`. En el formulario de
-carga indica el **ID de Documento** o el **ID de Tipo de documento** (uno de
-los dos) mas el archivo.
+`GET/POST …/documentos/`, `DELETE …/documentos/{id}/` y `GET …/requisitos/`.
+El formulario de carga usa **selects**: el **tipo de documento** sale de los
+requisitos del estado actual y el **documento** es un select dependiente del
+tipo (ej. "Identificacion" → "Pasaporte"/"INE"). No pide porcentaje (lo define
+la configuracion del requisito). Requiere `sinpapel-drf >= 0.4.0`.
 
 **Props:**
 
@@ -246,7 +248,7 @@ tx.comentarios.value = 'Aprobado por comite'
 await tx.submit()  // valida, construye payload, envia, resetea en exito
 ```
 
-**Retorna:** `{ targetState, comentarios, montoAprobado, condiciones, signatureBackend, signatureMode, signatureFields, signaturePayload, loading, error, errors, buildPayload, submit, reset, validate }`
+**Retorna:** `{ targetState, comentarios, condiciones, signatureBackend, signatureMode, signatureFields, signaturePayload, loading, error, errors, buildPayload, submit, reset, validate }`
 
 ### useSpLabels()
 

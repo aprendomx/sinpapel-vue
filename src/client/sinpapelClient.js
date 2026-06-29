@@ -12,7 +12,6 @@ export function buildTransitionRequest(payload) {
     const fd = new FormData()
     fd.append('target_state', payload.target_state)
     if (payload.comentarios) fd.append('comentarios', payload.comentarios)
-    if (payload.monto_aprobado != null) fd.append('monto_aprobado', String(payload.monto_aprobado))
     if (payload.condiciones != null) fd.append('condiciones', payload.condiciones)
     fd.append('signature.backend', 'fiel')
     fd.append('signature.mode', 'server-side')

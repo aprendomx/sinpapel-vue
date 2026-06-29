@@ -19,7 +19,6 @@ export function buildSignaturePayload(backend, mode, f) {
 export function useTransition(client) {
   const targetState = ref(null)
   const comentarios = ref('')
-  const montoAprobado = ref(null)
   const condiciones = ref('')
   const signatureBackend = ref(null) // null | 'fiel' | 'manual' | 'fake'
   const signatureMode = ref('client-side')
@@ -39,7 +38,6 @@ export function useTransition(client) {
   function buildPayload() {
     const payload = { target_state: targetState.value }
     if (comentarios.value) payload.comentarios = comentarios.value
-    if (montoAprobado.value != null && montoAprobado.value !== '') payload.monto_aprobado = montoAprobado.value
     if (condiciones.value) payload.condiciones = condiciones.value
     const sig = signaturePayload.value
     if (sig) payload.signature = sig
@@ -53,10 +51,6 @@ export function useTransition(client) {
       errors.targetState = 'Selecciona un estado destino.'
       ok = false
     }
-    if (montoAprobado.value != null && montoAprobado.value !== '' && Number(montoAprobado.value) <= 0) {
-      errors.montoAprobado = 'El monto debe ser mayor a 0.'
-      ok = false
-    }
     if (signatureBackend.value === 'fiel' && signatureMode.value === 'server-side') {
       if (!signatureFields.cer_file) { errors.cer_file = 'Selecciona el archivo .cer.'; ok = false }
       if (!signatureFields.key_file) { errors.key_file = 'Selecciona el archivo .key.'; ok = false }
@@ -68,7 +62,6 @@ export function useTransition(client) {
   function reset() {
     targetState.value = null
     comentarios.value = ''
-    montoAprobado.value = null
     condiciones.value = ''
     signatureBackend.value = null
     signatureMode.value = 'client-side'
@@ -100,7 +93,7 @@ export function useTransition(client) {
   }
 
   return {
-    targetState, comentarios, montoAprobado, condiciones,
+    targetState, comentarios, condiciones,
     signatureBackend, signatureMode, signatureFields, signaturePayload,
     loading, error, errors, buildPayload, submit, reset, validate,
   }

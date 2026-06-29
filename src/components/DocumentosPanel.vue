@@ -1,33 +1,37 @@
 <template>
   <div class="sp-docs">
-    <form class="sp-docs__form" @submit.prevent="onSubmit">
+    <p v-if="reqLoading" class="sp-docs__muted">{{ labels.cargando }}</p>
+    <p v-else-if="!tipos.length" class="sp-docs__muted">{{ labels.sinTiposCarga }}</p>
+
+    <form v-else class="sp-docs__form" @submit.prevent="onSubmit">
+      <div class="sp-docs__field">
+        <label class="sp-label">{{ labels.tipoDocumento }} <span aria-hidden="true">*</span></label>
+        <select v-model.number="selectedTipoId" class="sp-input">
+          <option :value="null" disabled>{{ labels.selecciona }}</option>
+          <option v-for="t in tipos" :key="t.tipo_documento_id" :value="t.tipo_documento_id">
+            {{ t.tipo_documento }}
+          </option>
+        </select>
+        <small v-if="fieldErrors.tipo_documento" class="sp-error">{{ fieldErrors.tipo_documento }}</small>
+      </div>
+
+      <div class="sp-docs__field">
+        <label class="sp-label">{{ labels.documento }} <span aria-hidden="true">*</span></label>
+        <select v-model.number="documentoId" class="sp-input" :disabled="!documentoOpciones.length">
+          <option :value="null" disabled>{{ labels.selecciona }}</option>
+          <option v-for="d in documentoOpciones" :key="d.id" :value="d.id">{{ d.nombre }}</option>
+        </select>
+        <small v-if="fieldErrors.documento" class="sp-error">{{ fieldErrors.documento }}</small>
+      </div>
+
       <div class="sp-docs__field">
         <label class="sp-label">{{ labels.archivo }} <span aria-hidden="true">*</span></label>
         <input ref="fileEl" type="file" class="sp-input" required @change="onFile" />
         <small v-if="fieldErrors.archivo" class="sp-error">{{ fieldErrors.archivo }}</small>
       </div>
 
-      <div class="sp-docs__row">
-        <div class="sp-docs__field">
-          <label class="sp-label">{{ labels.documentoId }}</label>
-          <input v-model.number="form.documento" type="number" min="1" class="sp-input" :placeholder="labels.opcional" />
-          <small v-if="fieldErrors.documento" class="sp-error">{{ fieldErrors.documento }}</small>
-        </div>
-        <div class="sp-docs__field">
-          <label class="sp-label">{{ labels.tipoDocumentoId }}</label>
-          <input v-model.number="form.tipo_documento" type="number" min="1" class="sp-input" :placeholder="labels.opcional" />
-          <small v-if="fieldErrors.tipo_documento" class="sp-error">{{ fieldErrors.tipo_documento }}</small>
-        </div>
-        <div class="sp-docs__field sp-docs__field--pct">
-          <label class="sp-label">{{ labels.porcentaje }}</label>
-          <input v-model.number="form.porcentaje" type="number" min="0" max="100" class="sp-input" />
-        </div>
-      </div>
-
-      <small class="sp-docs__hint">{{ labels.documentoOTipoHint }}</small>
-
       <div class="sp-actions">
-        <button type="submit" class="sp-btn sp-btn--primary" :disabled="loading || !file">
+        <button type="submit" class="sp-btn sp-btn--primary" :disabled="loading || !file || !documentoId">
           {{ loading ? labels.subiendo : labels.subir }}
         </button>
       </div>
@@ -58,7 +62,7 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useSpLabels } from '../composables/useSpLabels.js'
 
 const props = defineProps({ client: { type: Object, required: true } })
@@ -69,19 +73,54 @@ const labels = useSpLabels()
 const items = ref([])
 const file = ref(null)
 const fileEl = ref(null)
-const form = reactive({ documento: null, tipo_documento: null, porcentaje: 100 })
-const fieldErrors = reactive({})
+
+// Tipos requeridos por el estado actual y sus Documentos disponibles vienen de
+// `requisitos()` (nivel requisito_documento). El usuario elige tipo y, dentro,
+// cuál Documento sube (ej. tipo "Identificación" → "Pasaporte" / "INE").
+const tipos = ref([])
+const selectedTipoId = ref(null)
+const documentoId = ref(null)
+const fieldErrors = ref({})
 const formError = ref('')
 const loading = ref(false)
 const listLoading = ref(false)
+const reqLoading = ref(false)
+
+const selectedTipo = computed(
+  () => tipos.value.find((t) => t.tipo_documento_id === selectedTipoId.value) || null,
+)
+const documentoOpciones = computed(() => selectedTipo.value?.documentos_disponibles || [])
+
+// Al cambiar el tipo, resetea el Documento; si el tipo tiene una sola opción,
+// autoselecciónala para ahorrar un clic.
+watch(selectedTipoId, () => {
+  const opts = documentoOpciones.value
+  documentoId.value = opts.length === 1 ? opts[0].id : null
+})
 
 function onFile(e) {
   file.value = e.target.files?.[0] || null
 }
 
 function clearErrors() {
-  Object.keys(fieldErrors).forEach((k) => delete fieldErrors[k])
+  fieldErrors.value = {}
   formError.value = ''
+}
+
+async function loadRequisitos() {
+  reqLoading.value = true
+  try {
+    const data = await props.client.requisitos()
+    const reqs = (Array.isArray(data) ? data : []).filter(
+      (r) => r.nivel === 'requisito_documento' && r.tipo_documento_id != null,
+    )
+    tipos.value = reqs
+    if (reqs.length === 1) selectedTipoId.value = reqs[0].tipo_documento_id
+  } catch (e) {
+    formError.value = e.response?.data?.detail || e.message
+  } finally {
+    reqLoading.value = false
+  }
 }
 
 async function loadList() {
@@ -96,31 +135,27 @@ async function loadList() {
 }
 
 async function onSubmit() {
-  if (!file.value) return
+  if (!file.value || !documentoId.value) return
   clearErrors()
   loading.value = true
   try {
-    await props.client.uploadDocumento({
-      archivo: file.value,
-      documento: form.documento || undefined,
-      tipo_documento: form.tipo_documento || undefined,
-      porcentaje: form.porcentaje,
-    })
+    await props.client.uploadDocumento({ archivo: file.value, documento: documentoId.value })
     file.value = null
     if (fileEl.value) fileEl.value.value = ''
-    form.documento = null
-    form.tipo_documento = null
-    form.porcentaje = 100
+    selectedTipoId.value = null
+    documentoId.value = null
     await loadList()
     emit('changed')
   } catch (e) {
     const body = e.response?.data
     if (body && typeof body === 'object' && !Array.isArray(body)) {
+      const next = {}
       for (const [k, v] of Object.entries(body)) {
         const msg = Array.isArray(v) ? v.join(' ') : String(v)
-        if (k in fieldErrors || ['archivo', 'documento', 'tipo_documento'].includes(k)) fieldErrors[k] = msg
+        if (['archivo', 'documento', 'tipo_documento'].includes(k)) next[k] = msg
         else formError.value = msg
       }
+      fieldErrors.value = next
     } else {
       formError.value = e.message
     }
@@ -143,17 +178,15 @@ async function onDelete(id) {
   }
 }
 
-defineExpose({ items, onSubmit, onDelete, loadList })
+defineExpose({ items, tipos, selectedTipoId, documentoId, onSubmit, onDelete, loadList, loadRequisitos })
+loadRequisitos()
 loadList()
 </script>
 
 <style scoped>
 .sp-docs { display: flex; flex-direction: column; gap: 16px; font-family: var(--sp-font); }
 .sp-docs__form { display: flex; flex-direction: column; gap: 10px; }
-.sp-docs__row { display: flex; gap: 12px; flex-wrap: wrap; }
-.sp-docs__field { display: flex; flex-direction: column; gap: 4px; flex: 1 1 140px; }
-.sp-docs__field--pct { flex: 0 0 100px; }
-.sp-docs__hint { font-size: 11px; color: var(--sp-text-muted); }
+.sp-docs__field { display: flex; flex-direction: column; gap: 4px; }
 .sp-docs__muted { color: var(--sp-text-muted); font-size: 13px; margin: 0; }
 .sp-docs__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .sp-docs__item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 10px; border: 1px solid var(--sp-border); border-radius: 6px; }

@@ -1,6 +1,6 @@
 {
   "name": "@aprendomx/sinpapel-vue",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Vue 3 workflow-tracking widgets for the sinpapel-drf API",
   "license": "GPL-3.0",
   "type": "module",
